@@ -1,1 +1,1 @@
-from app.models.traffic_collision import TrafficCollision
+from app.models.traffic_collisions import TrafficCollision

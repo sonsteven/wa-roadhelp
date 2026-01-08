@@ -1,8 +1,10 @@
 from fastapi import FastAPI
+from app.api import traffic
 from typing import Dict
 import logging
 
 from app.core.logging import setup_logging
+
 
 # Initialize logging
 setup_logging()
@@ -15,6 +17,9 @@ app = FastAPI(
     description="Backend service for ingesting and querying Washington State traffic collision data.",
     version="0.1.0",
 )
+
+# Include traffic routes
+app.include_router(traffic.router)
 
 # Health check endpoint
 @app.get("/health", tags=["Health"])

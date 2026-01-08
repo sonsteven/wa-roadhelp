@@ -2,8 +2,11 @@
 Backend service for ingesting and querying Washington State traffic collision data.
 
 ## Tech Stack
-- Python
-- FastAPI
+- Python 3.14.2
+- FastAPI 
+- SQLAlchemy 2.0.45
+- PostgreSQL 
+- Uvicorn
 
 ## Local Development
 
