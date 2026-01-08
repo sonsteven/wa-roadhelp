@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from typing import Dict
 import logging
 
 from app.core.logging import setup_logging
@@ -6,6 +7,7 @@ from app.core.logging import setup_logging
 # Initialize logging
 setup_logging()
 logger = logging.getLogger(__name__)
+logger.info("Server started and health endpoint ready.")
 
 # Initialize FastAPI app
 app = FastAPI(
@@ -14,8 +16,9 @@ app = FastAPI(
     version="0.1.0",
 )
 
+# Health check endpoint
 @app.get("/health", tags=["Health"])
-def health_check():
+def health_check() -> Dict[str, str]:
     """Simple health check endpoint"""
     logger.info("Health check requested")
     return {

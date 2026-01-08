@@ -1,0 +1,1 @@
+from app.models.traffic_collision import TrafficCollision
