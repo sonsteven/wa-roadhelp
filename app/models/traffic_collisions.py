@@ -7,9 +7,10 @@ class TrafficCollision(Base):
     __tablename__ = "traffic_collisions"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    inc_key: Mapped[int] = mapped_column(Integer, unique=True, index=True)
 
-    county: Mapped[str] = mapped_column(String(50), nullable=False)
-    severity: Mapped[str] = mapped_column(String(50), nullable=False)
+    location: Mapped[str] = mapped_column(String(100), nullable=True)
+    severity: Mapped[str] = mapped_column(String(100), nullable=False)
 
     occurred_at: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
 

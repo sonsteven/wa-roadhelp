@@ -6,8 +6,9 @@ def insert_test_data():
     # Open new session and create new collision object
     with SessionLocal() as session:
         collision = TrafficCollision(
-            county="King",
-            severity="Fatal",
+            location="Port Orchard Ave",
+            severity="Property Damage",
+            inc_key=999999999999,
             occurred_at=datetime(2026, 1, 14, 14, 0)
         )
 
@@ -23,7 +24,7 @@ def insert_test_data():
         all_collisions = session.query(TrafficCollision).all()
 
         for coll in all_collisions:
-            print(coll.id, coll.county, coll.severity, coll.occurred_at)
+            print(coll.id, coll.inc_key, coll.location, coll.severity, coll.occurred_at)
 
 
 

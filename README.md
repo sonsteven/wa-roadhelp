@@ -1,5 +1,8 @@
-# wa-roadhelp
-Backend service for ingesting and querying Washington State traffic collision data.
+# sea-roadinfo
+Backend service for ingesting and querying Seattle traffic collision data.
+- Ingests real collision data from Seattle City open data portal.
+- Stores in PostgreSQL via SQLAlchemy ORM.
+- Provides filterable APIs for querying by location, date, severity, etc.
 
 ## Tech Stack
 - Python 3.14.2
