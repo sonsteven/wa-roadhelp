@@ -1,8 +1,9 @@
-from typing import Optional
+from typing import List, Optional
 from datetime import datetime
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 from app.models.traffic_collisions import TrafficCollision
+from app.models.severity import Severity
 from app.core.database import get_db
 
 router = APIRouter(
@@ -30,7 +31,7 @@ def read_collisions(
     if location:
         query = query.filter(TrafficCollision.location.ilike(f"%{location}%"))
     if severity:
-        query = query.filter(TrafficCollision.severity.ilike(f"%{severity}%"))
+        query = query.join(TrafficCollision.severity).filter(Severity.desc.ilike(f"%{severity}%"))
     if start_date:
         query = query.filter(TrafficCollision.occurred_at >= start_date)
     if end_date:

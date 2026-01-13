@@ -1,8 +1,11 @@
 import requests
-from datetime import datetime
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
 from sqlalchemy.orm import Session
 from app.core.database import SessionLocal
 from app.models.traffic_collisions import TrafficCollision
+from app.models.severity import Severity
+from app.models.collision_type import CollisionType
 
 BASE_URL = "https://services.arcgis.com/ZOyb2t4B0UYuYNYH/ArcGIS/rest/services/SDOT_Collisions_All_Years/FeatureServer/0/query"
 BATCH_SIZE = 1000
@@ -26,6 +29,34 @@ def fetch_collisions(offset: int = 0) -> dict:
     response = requests.get(BASE_URL, params=params)
     response.raise_for_status()
     return response.json()
+
+
+def get_or_create_lookup(db, model, code, desc):
+    """
+    Helper function to get or create lookup table.
+    """
+    if code is None:
+        code_value = None
+    else:
+        code_value = str(code)
+    
+    if desc is None:
+        desc_value = None
+    else:
+        desc_value = desc
+
+    if code_value:
+        row = db.query(model).filter_by(code=code_value).first()
+    else:
+        row = db.query(model).filter_by(desc=desc_value).first()
+    
+    if row is None:
+        row = model(code=code_value or "Unknown", desc=desc_value or "Unknown")
+        db.add(row)
+        db.flush()
+    
+    return row.id
+        
 
 def import_collisions():
     """
@@ -52,12 +83,31 @@ def import_collisions():
                 # Get feature attributes
                 attrs = feature["attributes"]
 
+                # Convert epoch time to PST date time
+                utc_time = datetime.fromtimestamp(attrs["INCDATE"]/1000, tz=timezone.utc)
+                pst_time = utc_time.astimezone(ZoneInfo("America/Los_Angeles"))
+
+                severity_id = get_or_create_lookup(
+                    db=db,
+                    model=Severity,
+                    code=attrs["SEVERITYCODE"],
+                    desc=attrs["SEVERITYDESC"]
+                )
+
+                collision_type_id = get_or_create_lookup(
+                    db=db,
+                    model=CollisionType,
+                    code=attrs["SDOT_COLCODE"],
+                    desc=attrs["SDOT_COLDESC"]
+                )
+
                 # Create new ORM object mapped to traffic_collisions table
                 collision = TrafficCollision(
                     inc_key=attrs["INCKEY"],
-                    severity=attrs["SEVERITYDESC"],
                     location=attrs["LOCATION"],
-                    occurred_at=datetime.utcnow()   # Temporary, need to parse collision timestamp
+                    occurred_at=pst_time,
+                    severity_id=severity_id,
+                    collision_type_id=collision_type_id
                 )
 
                 # Add object to session for insertion
@@ -74,4 +124,3 @@ def import_collisions():
 if __name__ == "__main__":
     import_collisions()
     
-
