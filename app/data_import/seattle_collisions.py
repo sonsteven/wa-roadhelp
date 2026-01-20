@@ -6,6 +6,12 @@ from app.core.database import SessionLocal
 from app.models.traffic_collisions import TrafficCollision
 from app.models.severity import Severity
 from app.models.collision_type import CollisionType
+from app.models.sdot_collision_type import SDOTCollisionType
+from app.models.junction_type import JunctionType
+from app.models.light_condition import LightCondition
+from app.models.weather_condition import WeatherCondition
+from app.models.road_condition import RoadCondition
+from app.models.address_type import AddressType
 
 BASE_URL = "https://services.arcgis.com/ZOyb2t4B0UYuYNYH/ArcGIS/rest/services/SDOT_Collisions_All_Years/FeatureServer/0/query"
 BATCH_SIZE = 1000
@@ -30,8 +36,7 @@ def fetch_collisions(offset: int = 0) -> dict:
     response.raise_for_status()
     return response.json()
 
-
-def get_or_create_lookup(db, model, code, desc):
+def get_or_create_by_code_desc(db, model, code, desc):
     """
     Helper function to get or create lookup table.
     """
@@ -47,11 +52,26 @@ def get_or_create_lookup(db, model, code, desc):
 
     if code_value:
         row = db.query(model).filter_by(code=code_value).first()
-    else:
+    elif desc_value:
         row = db.query(model).filter_by(desc=desc_value).first()
+    else:
+        return None
     
     if row is None:
         row = model(code=code_value or "Unknown", desc=desc_value or "Unknown")
+        db.add(row)
+        db.flush()
+    
+    return row.id
+
+def get_or_create_by_name(db, model, name):
+    if not name:
+        return None
+    
+    row = db.query(model).filter_by(name=name).first()
+    
+    if row is None:
+        row = model(name=name)
         db.add(row)
         db.flush()
     
@@ -87,18 +107,55 @@ def import_collisions():
                 utc_time = datetime.fromtimestamp(attrs["INCDATE"]/1000, tz=timezone.utc)
                 pst_time = utc_time.astimezone(ZoneInfo("America/Los_Angeles"))
 
-                severity_id = get_or_create_lookup(
+                # Create or get lookup tables
+                severity_id = get_or_create_by_code_desc(
                     db=db,
                     model=Severity,
                     code=attrs["SEVERITYCODE"],
                     desc=attrs["SEVERITYDESC"]
                 )
 
-                collision_type_id = get_or_create_lookup(
+                sdot_collision_type_id = get_or_create_by_code_desc(
                     db=db,
-                    model=CollisionType,
+                    model=SDOTCollisionType,
                     code=attrs["SDOT_COLCODE"],
                     desc=attrs["SDOT_COLDESC"]
+                )
+
+                collision_type_id = get_or_create_by_name(
+                    db=db,
+                    model=CollisionType,
+                    name=attrs["COLLISIONTYPE"]
+                )
+
+                junction_type_id = get_or_create_by_name(
+                    db=db,
+                    model=JunctionType,
+                    name=attrs["JUNCTIONTYPE"]
+                )
+
+                light_condition_id = get_or_create_by_name(
+                    db=db,
+                    model=LightCondition,
+                    name=attrs["LIGHTCOND"]
+                )
+
+                weather_condition_id = get_or_create_by_name(
+                    db=db,
+                    model=WeatherCondition,
+                    name=attrs["WEATHER"]
+                )
+
+                road_condition_id = get_or_create_by_name(
+                    db=db,
+                    model=RoadCondition,
+                    name=attrs["ROADCOND"]
+                )
+
+                address_type_id = get_or_create_by_name(
+                    db=db,
+                    model=AddressType,
+                    name=attrs["ADDRTYPE"]
                 )
 
                 # Create new ORM object mapped to traffic_collisions table
@@ -107,7 +164,20 @@ def import_collisions():
                     location=attrs["LOCATION"],
                     occurred_at=pst_time,
                     severity_id=severity_id,
-                    collision_type_id=collision_type_id
+                    sdot_collision_type_id=sdot_collision_type_id, 
+                    collision_type_id=collision_type_id,
+                    junction_type_id=junction_type_id,
+                    light_condition_id=light_condition_id,
+                    weather_condition_id=weather_condition_id,
+                    road_condition_id=road_condition_id,
+                    address_type_id=address_type_id,
+                    person_count=attrs["PERSONCOUNT"],
+                    ped_count=attrs["PEDCOUNT"],
+                    pedcyl_count=attrs["PEDCYLCOUNT"],
+                    veh_count=attrs["VEHCOUNT"],
+                    injuries=attrs["INJURIES"],
+                    serious_injuries=attrs["SERIOUSINJURIES"],
+                    fatalities=attrs["FATALITIES"]
                 )
 
                 # Add object to session for insertion
