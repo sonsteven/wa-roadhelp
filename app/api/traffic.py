@@ -87,4 +87,3 @@ def read_collision_expanded(collision_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Collision not found")
 
     return collision
-

@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from app.api import traffic
+from app.api import traffic, lookups, stats
 from typing import Dict
 import logging
 
@@ -18,8 +18,10 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# Include traffic routes
+# Include API routes
 app.include_router(traffic.router)
+app.include_router(lookups.router)
+app.include_router(stats.router)
 
 # Health check endpoint
 @app.get("/health", tags=["Health"])
