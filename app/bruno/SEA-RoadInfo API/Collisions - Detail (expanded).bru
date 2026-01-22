@@ -1,0 +1,22 @@
+meta {
+  name: Collisions - Detail (expanded)
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseURL}}/collisions?severity=Property&limit={{limit}}&offset=0
+  body: none
+  auth: inherit
+}
+
+params:query {
+  severity: Property
+  limit: {{limit}}
+  offset: 0
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

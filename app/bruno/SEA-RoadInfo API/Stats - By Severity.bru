@@ -1,0 +1,20 @@
+meta {
+  name: Stats - By Severity
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseURL}}/collisions/stats/?severity=Property
+  body: none
+  auth: inherit
+}
+
+params:query {
+  severity: Property
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

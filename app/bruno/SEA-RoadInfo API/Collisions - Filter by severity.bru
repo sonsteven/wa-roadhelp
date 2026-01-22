@@ -1,0 +1,21 @@
+meta {
+  name: Collisions - Filter by severity
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseURL}}/collisions?severity=Property&limit={{limit}}&offset=0
+  body: none
+  auth: inherit
+}
+
+params:query {
+  severity: Property
+  limit: {{limit}}
+  offset: 0
+}
+
+settings {
+  encodeUrl: true
+}

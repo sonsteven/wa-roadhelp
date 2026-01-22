@@ -1,0 +1,9 @@
+{
+  "version": "1",
+  "name": "SEA-RoadInfo API",
+  "type": "collection",
+  "ignore": [
+    "node_modules",
+    ".git"
+  ]
+}
