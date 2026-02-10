@@ -20,6 +20,7 @@ class TrafficCollision(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     inc_key: Mapped[int] = mapped_column(BigInteger, unique=True, nullable=False, index=True)
+    int_key: Mapped[int] = mapped_column(Integer, nullable=True, index=True)
 
     location: Mapped[str] = mapped_column(String(255), nullable=True)
 

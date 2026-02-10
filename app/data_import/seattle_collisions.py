@@ -36,6 +36,7 @@ def fetch_collisions(offset: int = 0) -> dict:
     response.raise_for_status()
     return response.json()
 
+
 def get_or_create_by_code_desc(db, model, code, desc):
     """
     Helper function to get or create lookup table.
@@ -63,6 +64,7 @@ def get_or_create_by_code_desc(db, model, code, desc):
         db.flush()
     
     return row.id
+
 
 def get_or_create_by_name(db, model, name):
     if not name:
@@ -161,6 +163,7 @@ def import_collisions():
                 # Create new ORM object mapped to traffic_collisions table
                 collision = TrafficCollision(
                     inc_key=attrs["INCKEY"],
+                    int_key=attrs["INTKEY"],
                     location=attrs["LOCATION"],
                     occurred_at=pst_time,
                     severity_id=severity_id,
