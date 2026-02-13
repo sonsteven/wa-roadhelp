@@ -1,4 +1,4 @@
-from sqlalchemy import Integer, BigInteger,String, DateTime, ForeignKey, CheckConstraint
+from sqlalchemy import Integer, BigInteger,String, DateTime, ForeignKey, CheckConstraint, Float
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.base import Base
@@ -23,8 +23,10 @@ class TrafficCollision(Base):
     int_key: Mapped[int] = mapped_column(Integer, nullable=True, index=True)
 
     location: Mapped[str] = mapped_column(String(255), nullable=True)
+    lon: Mapped[float] = mapped_column(Float, nullable=True)
+    lat: Mapped[float] = mapped_column(Float, nullable=True)
 
-    occurred_at: Mapped[DateTime] = mapped_column(DateTime, nullable=False)
+    occurred_at: Mapped[DateTime] = mapped_column(DateTime(timezone=True), nullable=False)
 
     # Counts
     person_count: Mapped[int] = mapped_column(Integer, nullable=True)

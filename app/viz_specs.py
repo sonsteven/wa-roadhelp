@@ -4,7 +4,7 @@ from typing import Literal, Optional
 from datetime import datetime
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import String, func, literal
 
 from app.models.address_type import AddressType
 from app.models.severity import Severity
@@ -147,3 +147,85 @@ def build_horizontal_bar_graph_spec(
     return inject_values(spec, values)
 
 
+def build_line_chart_spec(
+        db: Session,
+        *,
+        metric: Literal["collisions", "injuries", "serious_injuries", "fatalities", "harm"] = "collisions",
+        interval: Literal["day", "week", "month"] = "month",
+        series: Literal["none", "severity"] = "none",
+        location: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None
+) -> dict:
+    """
+    Build line chart spec for collisions metrics over time.
+    """
+    spec = load_vega_spec("line_chart.vega.json")
+
+    # Query collisions, then optionally apply filters
+    query = db.query(TrafficCollision)
+    if location:
+        query = query.filter(TrafficCollision.location.ilike(f"%{location}%"))
+    if start_date:
+        query = query.filter(TrafficCollision.occurred_at >= start_date)
+    if end_date:
+        query = query.filter(TrafficCollision.occurred_at <= end_date)
+
+    # Time bucket used for grouping by interval (day/week/month)
+    bucket = func.date_trunc(interval, TrafficCollision.occurred_at)
+
+    # Aggregates for calculating metrics
+    collision_count = func.count(TrafficCollision.id)
+    injuries_total = func.coalesce(func.sum(TrafficCollision.injuries), 0)
+    serious_injuries_total = func.coalesce(func.sum(TrafficCollision.serious_injuries), 0)
+    fatalities_total = func.coalesce(func.sum(TrafficCollision.fatalities), 0)
+
+    # Weighted "harm score", numbers easily adjustable
+    harm_score = (
+        fatalities_total * 5
+        + serious_injuries_total * 3
+        + injuries_total * 2
+        + collision_count * 1
+    )
+
+    # Map for metric selection
+    metric_expr_map = {
+        "collisions": collision_count,
+        "injuries": injuries_total,
+        "serious_injuries": serious_injuries_total,
+        "fatalities": fatalities_total,
+        "harm": harm_score,
+    }
+    amount_expr = metric_expr_map[metric]
+
+
+    # Select series mode, one line per severity bucket, or none (one line for metric)
+    if series == "severity":
+        series_expr = func.coalesce(Severity.desc, "Unknown")
+        query = query.outerjoin(TrafficCollision.severity)
+        series_select = series_expr.label("series")
+        series_group = series_expr
+    else:
+        series_select = literal(metric).label("series")
+        series_group = literal(metric)
+
+    rows = (
+        query.with_entities(
+            bucket.label("bucket"),
+            series_select,
+            amount_expr.label("amount"),
+        )
+        .group_by(bucket, series_group)
+        .order_by(bucket.asc())
+        .all()
+    )
+
+    values = []
+    for row in rows:
+        if row.bucket is None:
+            continue
+        values.append(
+            {"x": row.bucket.isoformat(), "y": int(row.amount), "c": row.series}
+        )
+
+    return inject_values(spec, values)

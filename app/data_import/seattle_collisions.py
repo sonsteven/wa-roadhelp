@@ -14,7 +14,7 @@ from app.models.road_condition import RoadCondition
 from app.models.address_type import AddressType
 
 BASE_URL = "https://services.arcgis.com/ZOyb2t4B0UYuYNYH/ArcGIS/rest/services/SDOT_Collisions_All_Years/FeatureServer/0/query"
-BATCH_SIZE = 1000
+BATCH_SIZE = 2000
 
 def fetch_collisions(offset: int = 0) -> dict:
     """
@@ -28,7 +28,9 @@ def fetch_collisions(offset: int = 0) -> dict:
         "f": "json",    # Format in json
         "resultOffset" : offset,    # Pagination offset
         "resultRecordCount": BATCH_SIZE,    # Number records to return
-        "orderByFields": "INCKEY"   # Order by INCKEY
+        "orderByFields": "INCKEY",   # Order by INCKEY
+        "returnGeometry": "true",
+        "outSR": "4326",
     }
 
     # Send GET request with params and return response JSON
@@ -102,12 +104,24 @@ def import_collisions():
 
             # Loop over each feature (collision record)
             for feature in features:
-                # Get feature attributes
+                # Get feature attributes and geometry
                 attrs = feature["attributes"]
+                geometry = feature.get("geometry") or {}
 
-                # Convert epoch time to PST date time
-                utc_time = datetime.fromtimestamp(attrs["INCDATE"]/1000, tz=timezone.utc)
-                pst_time = utc_time.astimezone(ZoneInfo("America/Los_Angeles"))
+                # Convert PST time to UTC
+                occurred_at = None
+                incdttm = attrs["INCDTTM"]
+                for fmt in ("%m/%d/%Y %I:%M:%S %p", "%m/%d/%Y"):
+                    try:
+                        local_naive = datetime.strptime(incdttm, fmt)
+                        local_dt = local_naive.replace(tzinfo=ZoneInfo("America/Los_Angeles"))
+                        occurred_at = local_dt.astimezone(timezone.utc)
+                        break
+                    except ValueError:
+                        pass
+
+                if occurred_at is None:
+                    occurred_at = datetime.fromtimestamp(attrs["INCDATE"]/1000, tz=timezone.utc)
 
                 # Create or get lookup tables
                 severity_id = get_or_create_by_code_desc(
@@ -165,7 +179,9 @@ def import_collisions():
                     inc_key=attrs["INCKEY"],
                     int_key=attrs["INTKEY"],
                     location=attrs["LOCATION"],
-                    occurred_at=pst_time,
+                    lon=geometry.get("x"),
+                    lat=geometry.get("y"),
+                    occurred_at=occurred_at,
                     severity_id=severity_id,
                     sdot_collision_type_id=sdot_collision_type_id, 
                     collision_type_id=collision_type_id,
