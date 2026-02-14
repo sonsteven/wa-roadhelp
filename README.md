@@ -1,14 +1,25 @@
 # sea-roadinfo
 Backend service for ingesting and querying Seattle traffic collision data.
 
-This project ingests Seattle’s public collision dataset into a normalized PostgreSQL schema (fact + lookup tables) and exposes filterable and aggregated FastAPI endpoints, plus Vega-ready visualization specs so the data can be explored programmatically and charted quickly.
+This project ingests Seattle’s public collision dataset into a normalized PostgreSQL schema (fact + lookup tables) and exposes filterable and aggregated FastAPI endpoints. It also builds and provides Vega-ready visualization specs so the data can be explored programmatically and charted quickly.
 
 ## Features
 - Ingests collision data from Seattle open data portal (ArcGIS REST).
 - Stores data in PostgreSQL using SQLAlchemy ORM (fact table + lookup tables).
-- Provides filterable `/collisions` API + `/lookups/*` reference endpoints.
-- `/collisions/stats/*` aggregate endpoints.
-- `/viz/*` endpoints return Vega specs with embedded data (copy/paste into Vega editor).
+- Filterable collisions API (`/collisions`) plus reference lookups (`/lookups/*`).
+- Aggregate stats endpoints (`/collisions/stats/*`).
+- Visualization endpoints (`/viz/*`) return Vega specs with embedded data (copy/paste into Vega editor).
+
+## Screenshots
+<p>
+  <img src="screenshots/swagger.png" width="700" alt="Swagger UI" />
+</p>
+<p>
+  <img src="screenshots/heatmap.png" width="700" alt="Collision heatmap" />
+</p>
+<p>
+  <img src="screenshots/line_chart.png" width="700" alt="Collisions over time" />
+</p>
 
 ## Tech Stack
 - Python 3.14.2
@@ -31,7 +42,8 @@ Create `/.env` from `.env.example`
 
 ## Data Note
 - Data source: Seattle open data (ArcGIS REST).
-- Importer uses `BATCH_SIZE` (default `1000`) and increments `offset += BATCH_SIZE` per page.
+- Importing the full dataset can take time and creates a large local database.
+- Importer uses `BATCH_SIZE` (default `2000`) and increments `offset += BATCH_SIZE` per page.
 - Reduce `BATCH_SIZE` if you hit timeouts/rate limits.
 
 ## Data Import
@@ -59,6 +71,8 @@ python -m uvicorn app.main:app --reload
 - `GET /collisions/stats/by-severity`
 - `GET /viz/collisions-by-severity`
 - `GET /viz/most-dangerous-intersections?metric=harm`
+- `GET /viz/collision-metrics-over-time?metric=collisions&interval=month&series=severity`
+- `GET /viz/collision-heatmap?metric=count`
 
 ## Vega 
 1) Call a `/viz/...` endpoint.
@@ -66,7 +80,7 @@ python -m uvicorn app.main:app --reload
 3) Paste into Vega Editor to render the chart.
 
 ## Bruno (API Testing)
-This repo includes a Bruno collection for quick manual API testing.
+This repo includes a Bruno collection for quick API smoke testing (health, collisions, lookups, stats, and viz endpoints).
 - Collection: `app/bruno/SEA-RoadInfo API/`
 - Environment: `local`
     - `baseURL` = `http://127.0.0.1:8000`

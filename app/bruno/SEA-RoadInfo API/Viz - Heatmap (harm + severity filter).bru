@@ -1,0 +1,21 @@
+meta {
+  name: Viz - Heatmap (harm + severity filter)
+  type: http
+  seq: 16
+}
+
+get {
+  url: {{baseURL}}/viz/collision-heatmap?metric=harm&severity_id=3
+  body: none
+  auth: inherit
+}
+
+params:query {
+  metric: harm
+  severity_id: 3
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}

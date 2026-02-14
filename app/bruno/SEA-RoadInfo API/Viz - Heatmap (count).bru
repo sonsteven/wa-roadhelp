@@ -1,17 +1,17 @@
 meta {
-  name: Stats - By Severity
+  name: Viz - Heatmap (count)
   type: http
-  seq: 8
+  seq: 15
 }
 
 get {
-  url: {{baseURL}}/collisions/stats/?severity=Property
+  url: {{baseURL}}/viz/collision-heatmap?metric=count
   body: none
   auth: inherit
 }
 
 params:query {
-  severity: Property
+  metric: count
 }
 
 settings {

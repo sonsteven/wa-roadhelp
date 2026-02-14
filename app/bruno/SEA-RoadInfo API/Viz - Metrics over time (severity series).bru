@@ -1,0 +1,22 @@
+meta {
+  name: Viz - Metrics over time (severity series)
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseURL}}/viz/collision-metrics-over-time?metric=collisions&interval=month&series=severity
+  body: none
+  auth: inherit
+}
+
+params:query {
+  metric: collisions
+  interval: month
+  series: severity
+}
+
+settings {
+  encodeUrl: true
+  timeout: 0
+}
