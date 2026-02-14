@@ -5,7 +5,7 @@ from datetime import datetime, timedelta
 from sqlalchemy.orm import Session
 from typing import Optional
 from app.models.traffic_collisions import TrafficCollision
-from app.viz_specs import build_collisions_by_severity_spec, build_horizontal_bar_graph_spec, build_line_chart_spec
+from app.viz_specs import build_collisions_by_severity_spec, build_horizontal_bar_graph_spec, build_line_chart_spec, build_collision_heatmap_spec
 
 
 router = APIRouter(
@@ -131,3 +131,26 @@ def collision_metrics_over_time(
         start_date=start_date,
         end_date=end_date,
     )
+
+@router.get("/collision-heatmap", response_model=None)
+def collision_heatmap(
+    metric: str = Query("count", pattern="^(count|harm)$"),
+    start_date: Optional[datetime] = Query(None),
+    end_date: Optional[datetime] = Query(None),
+    severity_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db)
+) -> dict:
+    """
+    Returns a Vega spec heatmap with data embedded for collisions by count or harm.
+    """
+
+    return build_collision_heatmap_spec(
+        db,
+        metric = metric,
+        start_date = start_date,
+        end_date = end_date,
+        severity_id=severity_id
+    )
+
+
+    

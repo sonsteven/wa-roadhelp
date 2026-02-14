@@ -1,0 +1,124 @@
+{
+  "$schema": "https://vega.github.io/schema/vega/v6.json",
+  "description": "Seattle collisions heat-style point map",
+  "width": 900,
+  "height": 650,
+  "padding": { "top": 8, "left": 8, "bottom": 40, "right": 180 },
+  "autosize": { "type": "pad", "contains": "padding" },
+
+  "signals": [
+    {
+      "name": "tooltip",
+      "value": null,
+      "on": [
+        { "events": "symbol:pointerover", "update": "datum" },
+        { "events": "symbol:pointermove", "update": "datum" },
+        { "events": "symbol:pointerout", "update": "null" }
+      ]
+    }
+  ],
+
+  "data": [
+    {
+      "name": "table",
+      "values": []
+    }
+  ],
+
+  "scales": [
+    {
+      "name": "x",
+      "type": "linear",
+      "domain": { "data": "table", "field": "lon" },
+      "range": "width",
+      "nice": false,
+      "zero": false
+    },
+    {
+      "name": "y",
+      "type": "linear",
+      "domain": { "data": "table", "field": "lat" },
+      "range": "height",
+      "nice": false,
+      "zero": false,
+      "reverse": true
+    },
+    {
+      "name": "color",
+      "type": "sequential",
+      "domain": { "data": "table", "field": "weight" },
+      "range": { "scheme": "yelloworangered" },
+      "zero": false
+    }
+  ],
+
+  "axes": [
+    {
+      "orient": "bottom",
+      "scale": "x",
+      "title": "Longitude",
+      "format": ".3f"
+    },
+    {
+      "orient": "left",
+      "scale": "y",
+      "title": "Latitude",
+      "format": ".3f"
+    }
+  ],
+
+  "legends": [
+    {
+      "fill": "color",
+      "type": "gradient",
+      "title": "Collision Weight",
+      "orient": "right",
+      "direction": "vertical",
+      "gradientLength": 260,
+      "gradientThickness": 14,
+      "offset": 12,
+      "format": ",.0f"
+    }
+  ],
+
+  "marks": [
+    {
+      "type": "symbol",
+      "from": { "data": "table" },
+      "encode": {
+        "enter": {
+          "x": { "scale": "x", "field": "lon" },
+          "y": { "scale": "y", "field": "lat" },
+          "fill": { "scale": "color", "field": "weight" }
+        },
+        "update": {
+          "size": { "signal": "clamp(sqrt(datum.weight) * 14, 8, 90)" },
+          "fillOpacity": { "value": 0.55 },
+          "stroke": { "value": "#7f1d1d"},
+          "strokeOpacity": { "value": 0.25 },
+          "strokeWidth": { "value": 0.35 }
+        },
+        "hover": {
+          "fillOpacity": { "value": 0.8 },
+          "strokeOpacity": { "value": 0.5 }
+        }
+      }
+    },
+    {
+      "type": "text",
+      "encode": {
+        "update": {
+          "x": { "value": 10 },
+          "y": { "value": 10 },
+          "align": { "value": "left" },
+          "baseline": { "value": "top" },
+          "fontSize": { "value": 12 },
+          "fill": { "value": "#111827" },
+          "text": {
+            "signal": "tooltip ? 'lon: ' + format(tooltip.lon, '.5f') + ', lat: ' + format(tooltip.lat, '.5f') + ' | weight: ' + format(tooltip.weight, ',') : ''"
+          }
+        }
+      }
+    }
+  ]
+}

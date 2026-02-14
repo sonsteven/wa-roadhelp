@@ -229,3 +229,73 @@ def build_line_chart_spec(
         )
 
     return inject_values(spec, values)
+
+def build_collision_heatmap_spec(
+    db: Session,
+    *,
+    metric: Literal["count", "harm"] = "count",
+    start_date: Optional[datetime] = None,
+    end_date: Optional[datetime] = None,
+    severity_id: Optional[int] = None
+) -> dict:
+    spec = load_vega_spec("collision_heatmap.vega.json")
+
+    query = db.query(TrafficCollision).filter(
+        TrafficCollision.lon.isnot(None),
+        TrafficCollision.lat.isnot(None)    
+    )
+
+    if start_date:
+        query = query.filter(TrafficCollision.occurred_at >= start_date)
+    if end_date:
+        query = query.filter(TrafficCollision.occurred_at <= end_date)
+    if severity_id:
+        query = query.filter(TrafficCollision.severity_id == severity_id)
+
+    # Aggregates for calculating metrics
+    collision_count = func.count(TrafficCollision.id)
+    injuries_total = func.coalesce(func.sum(TrafficCollision.injuries), 0)
+    serious_injuries_total = func.coalesce(func.sum(TrafficCollision.serious_injuries), 0)
+    fatalities_total = func.coalesce(func.sum(TrafficCollision.fatalities), 0)
+
+    # Weighted "harm score", numbers easily adjustable
+    harm_score = (
+        fatalities_total * 5
+        + serious_injuries_total * 3
+        + injuries_total * 2
+        + collision_count * 1
+    )
+
+    weight_expr = 0
+
+    if metric == "count":
+        weight_expr = collision_count
+    else:
+        weight_expr = harm_score
+
+    cell_size = 0.0025
+    lon_bin = (func.floor(TrafficCollision.lon / cell_size) * cell_size).label("lon")
+    lat_bin = (func.floor(TrafficCollision.lat / cell_size) * cell_size).label("lat")
+
+    rows = (
+        query.with_entities(
+            lon_bin,
+            lat_bin,
+            weight_expr.label("weight")
+        )
+        .group_by(lon_bin, lat_bin)
+        .order_by(weight_expr.desc())
+        .all()
+    )
+
+    values = []
+    for row in rows:
+        values.append(
+            {
+                "lon": float(row.lon),
+                "lat": float(row.lat),
+                "weight": float(row.weight),
+            }
+        )
+    
+    return inject_values(spec, values)
